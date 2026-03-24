@@ -2,10 +2,8 @@ name: Daily Data Collection
 
 on:
   schedule:
-    # 10am ET = 15:00 UTC (14:00 UTC when EDT)
-    # Using 15:00 UTC to safely cover both EST and EDT
-    - cron: '0 15 * * 1-5'   # weekdays only — TSA only updates Mon-Fri
-  workflow_dispatch:           # allows manual trigger from GitHub Actions UI
+    - cron: '0 15 * * 1-5'
+  workflow_dispatch:
 
 jobs:
   scrape-and-update:
@@ -15,7 +13,6 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
         with:
-          # Need full history so git commit works
           fetch-depth: 1
 
       - name: Set up Python
@@ -41,7 +38,12 @@ jobs:
           EIA_API_KEY: ${{ secrets.EIA_API_KEY }}
         run: python scripts/daily_scrape.py
 
-      - name: Commit updated database
+      - name: Generate dashboard
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python scripts/generate_dashboard.py
+
+      - name: Commit updated files
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
