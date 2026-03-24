@@ -1,0 +1,33 @@
+name: Weekly Recap
+
+on:
+  schedule:
+    # Monday 11am ET = Monday 16:00 UTC
+    # Runs after daily scrape (10am ET) has completed
+    - cron: '0 16 * * 1'
+  workflow_dispatch:           # allows manual trigger from GitHub Actions UI
+
+jobs:
+  weekly-recap:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run weekly recap
+        env:
+          ANTHROPIC_API_KEY:  ${{ secrets.ANTHROPIC_API_KEY }}
+          BUTTONDOWN_API_KEY: ${{ secrets.BUTTONDOWN_API_KEY }}
+        run: python scripts/weekly_recap.py

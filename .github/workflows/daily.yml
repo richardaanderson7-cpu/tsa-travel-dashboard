@@ -1,0 +1,50 @@
+name: Daily Data Collection
+
+on:
+  schedule:
+    # 10am ET = 15:00 UTC (14:00 UTC when EDT)
+    # Using 15:00 UTC to safely cover both EST and EDT
+    - cron: '0 15 * * 1-5'   # weekdays only — TSA only updates Mon-Fri
+  workflow_dispatch:           # allows manual trigger from GitHub Actions UI
+
+jobs:
+  scrape-and-update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+        with:
+          # Need full history so git commit works
+          fetch-depth: 1
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Initialize DB if not exists
+        run: |
+          if [ ! -f data/travel_data.db ]; then
+            echo "Database not found — initializing..."
+            python scripts/init_db.py
+          else
+            echo "Database exists — skipping init"
+          fi
+
+      - name: Run daily scrape
+        env:
+          EIA_API_KEY: ${{ secrets.EIA_API_KEY }}
+        run: python scripts/daily_scrape.py
+
+      - name: Commit updated database
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data/travel_data.db docs/index.html
+          git diff --staged --quiet || git commit -m "chore: daily data update $(date -u '+%Y-%m-%d')"
+          git push
