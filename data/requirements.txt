@@ -1,0 +1,6 @@
+requests==2.31.0
+beautifulsoup4==4.12.3
+lxml==5.2.1
+pandas==2.2.2
+plotly==5.22.0
+anthropic>=0.40.0
